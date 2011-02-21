@@ -1,0 +1,129 @@
+body{
+	font-family:tahoma;
+	font-size:11px;
+	background-color:#0f0f0f;
+	color:#EEEEEE;
+}
+.content{
+	margin-left:auto;
+	margin-right:auto;
+	width:1024px;
+	padding:20px;
+}
+a.ui-dialog-titlebar-close{
+  display: none;
+}
+
+.rightui{
+	width:328px;
+	float:right;
+}
+.rightuitop{
+	width:328px;
+	height:23px;
+	background-image:url('mystalia/rightpaneltopbottom.png');
+}
+.rightuibottom{
+	width:328px;
+	height:23px;
+	background-image:url('mystalia/rightpaneltopbottom.png');
+	background-position: 0px -23px;
+}
+.rightuicontent{
+	width:328px;
+	background-image:url('mystalia/rightpanelmiddle.png');
+	text-align:center;
+}
+.mapcontainer{
+	padding:15px;
+	background: url('mystalia/gamebg.png') no-repeat;
+}
+.consolecontainer{
+	margin-left:15px;
+}
+.playerhealthsquare{
+	width:255px;
+	height:117px;
+	background-image:url(mystalia/mediumsquarepanel.png);
+	padding:15px;
+}
+
+.statusbarcontainer{
+	width:218px;
+	height:20px;
+	background-image:url(mystalia/statbargrey.jpg);
+}
+.healthbar{
+	height:18px;
+	background: url(mystalia/loadbars.jpg) repeat-x;
+	border:1px solid #b21111;
+	width:1px;
+}
+.manabar{
+	height:18px;
+	background: url(mystalia/loadbars.jpg) repeat-x;
+	background-position: 0px -18px;
+	border:1px solid #0075b0;
+	width:1px;
+}
+.xpbar{
+	height:18px;
+	background: url(mystalia/loadbars.jpg) repeat-x;
+	background-position: 0px -36px;
+	border:1px solid #9f9710;
+	width:1px;
+}
+
+.inventory-menu-button{
+	width:139px;
+	height:33px;
+	background-image:url(mystalia/rightpanelbuttons.png);
+	cursor:pointer;
+	margin-bottom:5px;
+}
+.stats-menu-button{
+	width:139px;
+	height:33px;
+	background-image:url(mystalia/rightpanelbuttons.png);
+	background-position: 0px -33px;
+	cursor:pointer;
+	margin-bottom:5px;
+}
+.abilities-menu-button{
+	width:139px;
+	height:33px;
+	background-image:url(mystalia/rightpanelbuttons.png);
+	background-position: 0px -66px;
+	cursor:pointer;
+	margin-bottom:5px;
+}
+.guild-menu-button{
+	width:139px;
+	height:33px;
+	background-image:url(mystalia/rightpanelbuttons.png);
+	background-position: 0px -99px;
+	cursor:pointer;
+	margin-bottom:5px;
+}
+.quests-menu-button{
+	width:139px;
+	height:33px;
+	background-image:url(mystalia/rightpanelbuttons.png);
+	background-position: 0px -132px;
+	cursor:pointer;
+	margin-bottom:5px;
+}
+.options-menu-button{
+	width:139px;
+	height:33px;
+	background-image:url(mystalia/rightpanelbuttons.png);
+	background-position: 0px -165px;
+	cursor:pointer;
+	margin-bottom:5px;
+}
+
+.playeronlinelist{
+	background-image:url(mystalia/tallpanel.png);
+	width:136px;
+	height:239px;
+}
