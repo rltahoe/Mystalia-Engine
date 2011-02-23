@@ -1,20 +1,41 @@
+// Capture mouse clicks.
 var isLeftMouseButtonDown = false;
 var isRightMouseButtonDown = false;
 var isMiddleMouseButtonDown = false;
+
+// Capture keyboard keys
+var DirectionKeys = {
+	W: false,
+	A: false,
+	S: false,
+	D: false
+}
+var ActionKeys = {
+	E: false,
+	F: false,
+	LEFTSHIFT: false
+}
+
 var isLoggedIn = false;
 
+// Holds the cell location for which tile the mouse is over. (cell and tile are same thing).
 var MouseOverCell = 'None';
+
+// Holds the current map tile attributes.
 var AttributeArray = Array();
 
+// Checks which tab is selected for map editor
 var Editor = true;
 var Attributes = false;
 
+// Writes text on a new line.
 function WriteLine(text,color){
 	text = '<font color="#'+color+'">'+text+'</font>';
 	$('#playeroutput').html($('#playeroutput').html()+'<br />'+text);
 	$('#playeroutput').clearQueue();
 	$('#playeroutput').animate({ scrollTop: $("#playeroutput").attr("scrollHeight") }, 'slow');
 }
+// Writes text on the same line.
 function Write(text,color){
 	text = '<font color="#'+color+'">'+text+'</font>';
 	$('#playeroutput').html($('#playeroutput').html()+text);
@@ -22,6 +43,11 @@ function Write(text,color){
 	$('#playeroutput').animate({ scrollTop: $("#playeroutput").attr("scrollHeight") }, 'slow');
 }
 
+function ResetDirectionKeys(){
+	DirectionKeys.W = false; DirectionKeys.A = false; DirectionKeys.S = false; DirectionKeys.D = false;
+}
+
+// called when you press enter in the text chat box
 function SendPlayerInput(sender,e){
 	if(sender.value!='' && e.keyCode == 13) {
 		SendData('localchat='+sender.value);
@@ -35,11 +61,12 @@ function PressLoginButton(sender,e){
 	}
 }
 
+// Logout.
 function GoOffline(){
-	$.ajax({ url: "ajax/player.php", data:'offline='+User_Player_Id });
+	SendData('offline=x');
 }
 
-// This function updates the mouseover cell number.
+// This function updates the mouseover cell number, and performs functions if mouse buttons are held.
 function UpdateMouseOverCell(cell){
 	var layer = $('input:radio[name=ActiveLayer]:checked').val();
 	var output = "None";
@@ -144,6 +171,7 @@ function FloodClear(){
 }
 
 // Required to begin drawing onto the map. This sets up left, right and middle mouse clicks.
+// Called only when an "activetile" is picked from the editor.
 function SetupMouse(){
 	
 	$('#map').mouseleave(function(){
@@ -159,9 +187,9 @@ function SetupMouse(){
 	
 	$('#map').mousedown(function(event){
 		switch(event.which){
-			case 1: isLeftMouseButtonDown = true; break;
-			case 2: isMiddleMouseButtonDown = true; break;
-			case 3: isRightMouseButtonDown = true; break;
+			case 1: ResetMouseButtons(); isLeftMouseButtonDown = true; break;
+			case 2: ResetMouseButtons(); isMiddleMouseButtonDown = true; break;
+			case 3: ResetMouseButtons(); isRightMouseButtonDown = true; break;
 		}
 	});
 	
@@ -189,6 +217,7 @@ function LoadMapList(data){
 	$('#MapList').html(data);
 }
 
+// On selecting a tileset, load it.
 function TileSetSelect(){
 	tileset = $('#tilesetsdropdown').val().split(':');
 	$('#TileSet').css('width',parseInt(tileset[1])+18);
@@ -212,6 +241,7 @@ function TileSetSelect(){
 	$('#TileSetGrid').html(mapgridhtml);
 }
 
+// The active tile is the one you have selected and wish to paint on.
 function SetActiveTile(tileset,element){
 	var output = String(element.id).replace('editor','');
 	var offsets = output.split('x');

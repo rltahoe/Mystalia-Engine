@@ -140,7 +140,18 @@ function MovePlayer(player,isinput){
 		Sprite_Animation_Moving[player] = true;
 		ptpos = $('#map').position();
 		$('#playertitle-'+player).animate({ "left": ptpos.left+(playerloc[0]*32)-32 + 'px', "top": ptpos.top+(playerloc[1]*32)-15 + 'px'	}, Player_Speed[player], 'linear' );
-		$('#playersprite-'+player).animate({ "left": ptpos.left+(playerloc[0]*32) + 'px', "top": ptpos.top+(playerloc[1]*32) + 'px'	}, Player_Speed[player], 'linear', function(){ Sprite_Animation_Moving[player] = false; clearInterval(AnimationInterval[player]); if(Player_Moving[player]){ MovePlayer(player,true); } });
+		
+		$('#playersprite-'+player).animate({ "left": ptpos.left+(playerloc[0]*32) + 'px', "top": ptpos.top+(playerloc[1]*32) + 'px'	}, Player_Speed[player], 'linear', function(){
+			Sprite_Animation_Moving[player] = false;
+			clearInterval(AnimationInterval[player]);
+			if(DirectionKeys.W == true || DirectionKeys.A == true || DirectionKeys.S == true || DirectionKeys.D == true){
+				MovePlayer(User_Player,true);
+			}else{
+				Player_Moving[player] = false;
+				ResetDirectionKeys();
+			}
+		});
+		
 		Player_Location[player] = playerloc;
 	}
 }

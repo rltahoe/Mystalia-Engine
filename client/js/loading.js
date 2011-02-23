@@ -40,24 +40,52 @@ $(function() {
 
 // Set Keyboard Events.
 $(document).keyup(function (e) {
-	if(e.which == 20){ if(Player_Speed[User_Player] == 400){ Player_Speed[User_Player] = 200; }else{ Player_Speed[User_Player] = 400; } }
-	Player_Moving[User_Player] = false;
+	switch(e.which){
+		case 87 || 119: DirectionKeys.W = false; Player_Moving[User_Player] = false; break;
+		case 65 || 97: DirectionKeys.A = false; Player_Moving[User_Player] = false; break;
+		case 83 || 115: DirectionKeys.S = false; Player_Moving[User_Player] = false; break;
+		case 68 || 100: DirectionKeys.D = false; Player_Moving[User_Player] = false; break;
+		case 16: ActionKeys.LEFTSHIFT = false; Player_Speed[User_Player] = 400; break;
+		case 102 || 70: ActionKeys.F = false; break;
+	}
 }).keydown(function (e) {
 	if(Sprite_Animation_Moving[User_Player] == false && isGameInFocus() == true){
-		if(e.which == 87 || e.which == 119) {
-			Player_Direction[User_Player] = 'up'; MovePlayer(User_Player,true);
+		if(Player_Moving[User_Player] == false){
+			switch(e.which){
+				case 87 || 119: if(DirectionKeys.W == false){
+						ResetDirectionKeys();
+						DirectionKeys.W = true;
+						Player_Direction[User_Player] = 'up';
+						MovePlayer(User_Player,true);
+					}
+					break;
+				case 65 || 97: if(DirectionKeys.A == false){
+						ResetDirectionKeys();
+						DirectionKeys.A = true;
+						Player_Direction[User_Player] = 'left';
+						MovePlayer(User_Player,true);
+					}
+					break;
+				case 83 || 115: if(DirectionKeys.S == false){
+						ResetDirectionKeys(); 
+						DirectionKeys.S = true; 
+						Player_Direction[User_Player] = 'down';
+						MovePlayer(User_Player,true);
+					}
+					break;
+				case 68 || 100: if(DirectionKeys.D == false){
+						ResetDirectionKeys(); 
+						DirectionKeys.D = true; 
+						Player_Direction[User_Player] = 'right'; 
+						MovePlayer(User_Player,true);
+					}
+					break;
+			}
 		}
-		if(e.which == 65 || e.which == 97) {
-			Player_Direction[User_Player] = 'left'; MovePlayer(User_Player,true);
-		}
-		if(e.which == 83 || e.which == 115) {
-			Player_Direction[User_Player] = 'down'; MovePlayer(User_Player,true);
-		}
-		if(e.which == 68 || e.which == 100) {
-			Player_Direction[User_Player] = 'right'; MovePlayer(User_Player,true);
-		}
-		
-		if(e.which == 102 || e.which == 70){ SendData('attack=1'); AttackAnimation(User_Player); }
+	}
+	switch(e.which){
+		case 16: ActionKeys.LEFTSHIFT = true; Player_Speed[User_Player] = 200; break;
+		case 102 || 70: if(ActionKeys.F==false){ ActionKeys.F = true; SendData('attack=1'); AttackAnimation(User_Player); } break;
 	}
 });
 
