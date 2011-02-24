@@ -3,4 +3,19 @@ This is a Javascript MMORPG engine that uses websockets (socket.io).
 See our main test site: http://mystalia.org
 See our wiki: http://wiki.mystalia.org
 
+<h3>Testing Locally</h3>
+<b>Linux</b>
+<ol>
+<li>http://wiki.mystalia.org/index.php/Setting_Up_A_Server</li>
+<li>Import skeleton.sql</li>
+</ol>
+
+<b>Windows</b>
+<ol>
+<li>Install XAMPP or something so you can view the client.</li>
+<li>http://codebetter.com/matthewpodwysocki/2010/09/08/getting-started-with-node-js-on-windows/</li>
+<li>Then follow the guide here: http://wiki.mystalia.org/index.php/Setting_Up_A_Server</li>
+<li>Import skeleton.sql</li>
+</ol>
+
 Please take a look at the current issues, and also the wiki to understand the game concepts.
