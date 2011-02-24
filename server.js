@@ -84,7 +84,7 @@ socket.on('connection', function(client){
 	if(workingmsg == ""){ HandleClientData(data,clientid); }else{ SendData(clientid,'working:'+workingmsg); }
 	
 	if(PlayerUpdater[clientid] == true){
-		console.log('Player Updating Initialised On Map '+PlayerMap[clientid]+' For '+clientid);
+		console.log('Map '+PlayerMap[clientid]+' loaded by '+PlayerName[clientid]+' ('+clientid+')');
 		PlayerUpdaterInterval[clientid] = setInterval(function(){ UpdatePlayersOnMap(clientid); },500);
 		PlayerUpdater[clientid] = false;
 	}
@@ -223,7 +223,7 @@ function CreateChar(chardata,clientid){
 	 mysql.query("select * from accounts where clientid = '"+clientid+"'",function(err,results,fields){
 	 var acc = results[0];
 		if(results.length != null){
-			mysql.query("select * from accounts where id = "+acc['id'],function(err,results,fields){
+			mysql.query("select * from players where account = "+acc['id'],function(err,results,fields){
 				if(results.length < 3){
 					mysql.query("select * from classes where id = "+pclass,function(err, results, fields){
 						var classx = results[0];
@@ -461,7 +461,6 @@ function LoadMap(mapid, clientid){
 		SendData(clientid,MapData[mapid]);
 		PlayerUpdater[clientid] = true;
 	}
-	console.log('Map '+mapid+' loaded by '+clientid);
 }
 
 function SetMapAttributes(mapid,attributes){

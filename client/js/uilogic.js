@@ -264,14 +264,7 @@ function SetCharSelectSprite(id){
 	var sprite = $('#charselectsprite-'+id).html();
 	
 	var y = sprite * 32;
-	var x = 0;
-	switch(sprite){
-		case "up": x=0; break;
-		case "down": x=96; break;
-		case "left": x=192; break;
-		case "right": x=288; break;
-	}
-	x = x + (sprite*32);
+	var x = 96;
 	
 	if(y>0){ y = '-' + y; }
 	if(x>0){ x = '-' + x; }

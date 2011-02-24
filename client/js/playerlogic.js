@@ -40,6 +40,7 @@ function SetPlayerSprite(player){
 		case "down": x=96; break;
 		case "left": x=192; break;
 		case "right": x=288; break;
+		default: x=96; break;
 	}
 	x = x + (Sprite_Animation_Progress[player]*32);
 	

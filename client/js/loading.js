@@ -5,14 +5,14 @@ var ismapeditor = false;
 var selectedclass = 0;
 
 function DoLogin(data){
-	if(data != 'false'){
+	if(data != 'false' && data != 'fail'){
 		$('#charselect').html(data);
 		SetCharSelectSprite(0);
 		SetCharSelectSprite(1);
 		SetCharSelectSprite(2);
 		$( "#charselect" ).dialog( "open" );
 		$( "#login-form" ).dialog( "close" );
-	}else{ alert('Login Error'); }
+	}else{ alert('Login Failed'); }
 }
 
 function DoLogout(){
@@ -41,39 +41,40 @@ $(function() {
 // Set Keyboard Events.
 $(document).keyup(function (e) {
 	switch(e.which){
-		case 87 || 119: DirectionKeys.W = false; Player_Moving[User_Player] = false; break;
-		case 65 || 97: DirectionKeys.A = false; Player_Moving[User_Player] = false; break;
-		case 83 || 115: DirectionKeys.S = false; Player_Moving[User_Player] = false; break;
-		case 68 || 100: DirectionKeys.D = false; Player_Moving[User_Player] = false; break;
+		case 87: DirectionKeys.W = false; Player_Moving[User_Player] = false; break;
+		case 65: DirectionKeys.A = false; Player_Moving[User_Player] = false; break;
+		case 83: DirectionKeys.S = false; Player_Moving[User_Player] = false; break;
+		case 68: DirectionKeys.D = false; Player_Moving[User_Player] = false; break;
 		case 16: ActionKeys.LEFTSHIFT = false; Player_Speed[User_Player] = 400; break;
-		case 102 || 70: ActionKeys.F = false; break;
+		case 70: ActionKeys.F = false; break;
 	}
-}).keydown(function (e) {
+});
+$(document).keydown(function (e) {
 	if(Sprite_Animation_Moving[User_Player] == false && isGameInFocus() == true){
 		if(Player_Moving[User_Player] == false){
 			switch(e.which){
-				case 87 || 119: if(DirectionKeys.W == false){
+				case 87: if(DirectionKeys.W == false){
 						ResetDirectionKeys();
 						DirectionKeys.W = true;
 						Player_Direction[User_Player] = 'up';
 						MovePlayer(User_Player,true);
 					}
 					break;
-				case 65 || 97: if(DirectionKeys.A == false){
+				case 65: if(DirectionKeys.A == false){
 						ResetDirectionKeys();
 						DirectionKeys.A = true;
 						Player_Direction[User_Player] = 'left';
 						MovePlayer(User_Player,true);
 					}
 					break;
-				case 83 || 115: if(DirectionKeys.S == false){
+				case 83: if(DirectionKeys.S == false){
 						ResetDirectionKeys(); 
 						DirectionKeys.S = true; 
 						Player_Direction[User_Player] = 'down';
 						MovePlayer(User_Player,true);
 					}
 					break;
-				case 68 || 100: if(DirectionKeys.D == false){
+				case 68: if(DirectionKeys.D == false){
 						ResetDirectionKeys(); 
 						DirectionKeys.D = true; 
 						Player_Direction[User_Player] = 'right'; 
@@ -85,7 +86,7 @@ $(document).keyup(function (e) {
 	}
 	switch(e.which){
 		case 16: ActionKeys.LEFTSHIFT = true; Player_Speed[User_Player] = 200; break;
-		case 102 || 70: if(ActionKeys.F==false){ ActionKeys.F = true; SendData('attack=1'); AttackAnimation(User_Player); } break;
+		case 70: if(ActionKeys.F == false){ ActionKeys.F = true; SendData('attack=1'); AttackAnimation(User_Player); } break;
 	}
 });
 
