@@ -17,6 +17,30 @@ var startmap = 1;
 var startpos = '10x6';
 var workingmsg = "" // "The server will be down for maintenance and integration of Artificial Intelligence!!! (17/02/2011)";
 
+var socketOptions = { 
+  transportOptions: { 
+    'flashsocket': { 
+      closeTimeout: 1000000, 
+      timeout: 100000 
+    }, 'websocket': { 
+      closeTimeout: 1000000, 
+      timeout: 100000 
+    }, 'htmlfile': { 
+      closeTimeout: 1000000, 
+      timeout: 100000 
+    }, 'xhr-multipart': { 
+      closeTimeout: 1000000, 
+      timeout: 100000 
+    }, 'xhr-polling': { 
+      closeTimeout: 1000000, 
+      timeout: 100000 
+    }, 'jsonp-polling': { 
+      closeTimeout: 1000000, 
+      timeout: 100000 
+    } 
+  } 
+}; 
+
 // Start the server at port 8080
 var server = http.createServer(function(req, res){ 
   res.writeHead(200,{ 'Content-Type': 'text/html' }); 
@@ -71,7 +95,7 @@ function Initialise(){
 
 Initialise();
 // Create a Socket.IO instance, passing it our server
-var socket = io.listen(server);
+var socket = io.listen(server,socketOptions);
 
 // Add a connect listener
 socket.on('connection', function(client){ 
@@ -249,7 +273,7 @@ function SetPlayerOnline(player,clientid){
 				mysql.query('update players set online=1 where id='+player);
 				mysql.query('select * from players where id='+player, function(err, results, fields){
 					var clientaccount = results[0];
-					
+					PlayerAlreadyLoaded(clientaccount['id']);
 					PlayerChangingMap[clientid] = false;
 					PlayerId[clientid] = clientaccount['id'];
 					PlayerName[clientid] = clientaccount['name'];
@@ -286,32 +310,48 @@ function RemoveClientId(clientid){
 	}
 }
 
+
+// Check of the playerid is already playing.
+function PlayerAlreadyLoaded(pid){
+	for(var i = 0; i < ClientIds.length; i++){
+		var clientid = ClientIds[i];
+		if(pid == PlayerId[clientid]){
+			ClientIds[i] = "";
+			PlayerId[clientid] = "";
+			PlayerName[clientid] = "";
+			PlayerSprite[clientid] = "";
+			PlayerMap[clientid] = "";
+			PlayerPosition[clientid] = "";
+			PlayerItems[clientid] = "";
+			PlayerXp[clientid] = "";
+			PlayerAccess[clientid] = "";
+			PlayerHealth[clientid] = Array("","");
+		}
+	}
+}
+
 // Submit user data to database
 function SavePlayerData(clientid,kickplayer){
-	try{
-		var phealth = PlayerHealth[clientid];
-		mysql.query('update players set name="'+PlayerName[clientid]+'", sprite="'+PlayerSprite[clientid]+'", map="'+PlayerMap[clientid]+'", position="'+PlayerPosition[clientid]+'", items="'+PlayerItems[clientid]+'", xp="'+PlayerXp[clientid]+'", health="'+phealth[0]+'='+phealth[1]+'", online=0 where id='+PlayerId[clientid],function(err,results,fields){
+	var phealth = PlayerHealth[clientid];
+	mysql.query('update players set name="'+PlayerName[clientid]+'", sprite="'+PlayerSprite[clientid]+'", map="'+PlayerMap[clientid]+'", position="'+PlayerPosition[clientid]+'", items="'+PlayerItems[clientid]+'", xp="'+PlayerXp[clientid]+'", health="'+phealth[0]+'='+phealth[1]+'", online=0 where id='+PlayerId[clientid],function(err,results,fields){
+		
+		if(kickplayer == true){
+			console.log('Player '+PlayerName[clientid]+' has left the world.');
+			SendAnnounceChat(PlayerName[clientid] + ' has left the game.');
 			
-			if(kickplayer == true){
-				console.log('Player '+PlayerName[clientid]+' has left the world.');
-				SendAnnounceChat(PlayerName[clientid] + ' has left the game.');
-				
-				RemoveClientId(clientid);
-				
-				PlayerId[clientid] = "";
-				PlayerName[clientid] = "";
-				PlayerSprite[clientid] = "";
-				PlayerMap[clientid] = "";
-				PlayerPosition[clientid] = "";
-				PlayerItems[clientid] = "";
-				PlayerXp[clientid] = "";
-				PlayerAccess[clientid] = "";
-				PlayerHealth[clientid] = Array("","");
-			}
-		});
-	}catch(err){
-		console.log('Set Player Offline Error');
-	}
+			RemoveClientId(clientid);
+			
+			PlayerId[clientid] = "";
+			PlayerName[clientid] = "";
+			PlayerSprite[clientid] = "";
+			PlayerMap[clientid] = "";
+			PlayerPosition[clientid] = "";
+			PlayerItems[clientid] = "";
+			PlayerXp[clientid] = "";
+			PlayerAccess[clientid] = "";
+			PlayerHealth[clientid] = Array("","");
+		}
+	});
 }
 
 function GetPlayersOnMap(mapid,clientid){
