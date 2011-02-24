@@ -6,8 +6,8 @@ var http = require('http'), io = require('socket.io');
 var Mysql = require('mysql').Client,
 mysql = new Mysql();
 
-mysql.user = '';
-mysql.password = '';
+mysql.user = 'mystalia';
+mysql.password = 'mystalia777';
 mysql.connect();
 mysql.query('USE mmorpg');
 
@@ -29,6 +29,7 @@ var PlayerUpdaterInterval = Array();
 var PlayerChangingMap = Array();
 
 var ClientIds = Array();
+var PlayerLoggedIn = Array();
 var PlayerId = Array();
 var PlayerName = Array();
 var PlayerItems = Array();
@@ -96,7 +97,10 @@ socket.on('connection', function(client){
 });
 
 function HandleClientData(data,clientid){
+	tempdata = data;
 	data = data.split('=');
+	tempdata = tempdata.substring(data[0].length+1);
+	data = Array(data[0],tempdata);
 	var output = "";
 	switch(data[0]){
 		case "login": DoLogin(data[1],clientid); break;
@@ -148,6 +152,7 @@ function DoLogin(logindata,clientid){
 		  console.log(err);
 		}else{
 			if(results.length > 0){
+				RemoveClientId(clientid);
 				ClientIds.push(clientid);
 				var clientaccount = results[0];
 				mysql.query('update accounts set clientid="'+clientid+'" where id='+clientaccount['id']);
@@ -236,41 +241,63 @@ function CreateChar(chardata,clientid){
 
 // Set the player as online.
 function SetPlayerOnline(player,clientid){
-	mysql.query('select * from accounts where clientid="'+clientid+'"', function(err, results, fields){
-		if(err){ console.log(err); }
-		if(results.length > 0){
-			var clientaccount = results[0];
-			mysql.query('update players set online=1 where id='+player);
-			mysql.query('select * from players where id='+player, function(err, results, fields){
+	if(isLoggedIn(PlayerId[clientid]) == false){
+		mysql.query('select * from accounts where clientid="'+clientid+'"', function(err, results, fields){
+			if(err){ console.log(err); }
+			if(results.length > 0){
 				var clientaccount = results[0];
-				
-				PlayerChangingMap[clientid] = false;
-				PlayerId[clientid] = clientaccount['id'];
-				PlayerName[clientid] = clientaccount['name'];
-				PlayerSprite[clientid] = clientaccount['sprite'];
-				PlayerMap[clientid] = clientaccount['map'];
-				PlayerPosition[clientid] = clientaccount['position'];
-				PlayerItems[clientid] = clientaccount['items'];
-				PlayerXp[clientid] = clientaccount['xp'];
-				PlayerAccess[clientid] = clientaccount['access'];
-				PlayerHealth[clientid] = clientaccount['health'];
-				
-				SendData(clientid,'online:'+clientaccount['id'] + ":" + clientaccount['name'] + ":" + clientaccount['sprite'] + ":" + clientaccount['map'] + ":" + clientaccount['position'] + ":" + clientaccount['items'] + ":" + clientaccount['xp'] + ":" + clientaccount['access'] + ":" + clientaccount['health']);
-				console.log('Player '+PlayerName[clientid]+' has entered the world.');
-			});
+				mysql.query('update players set online=1 where id='+player);
+				mysql.query('select * from players where id='+player, function(err, results, fields){
+					var clientaccount = results[0];
+					
+					PlayerChangingMap[clientid] = false;
+					PlayerId[clientid] = clientaccount['id'];
+					PlayerName[clientid] = clientaccount['name'];
+					PlayerSprite[clientid] = clientaccount['sprite'];
+					PlayerMap[clientid] = clientaccount['map'];
+					PlayerPosition[clientid] = clientaccount['position'];
+					PlayerItems[clientid] = clientaccount['items'];
+					PlayerXp[clientid] = clientaccount['xp'];
+					PlayerAccess[clientid] = clientaccount['access'];
+					PlayerHealth[clientid] = Array(clientaccount['health'],clientaccount['health']);
+					
+					SendData(clientid,'online:'+clientaccount['id'] + ":" + clientaccount['name'] + ":" + clientaccount['sprite'] + ":" + clientaccount['map'] + ":" + clientaccount['position'] + ":" + clientaccount['items'] + ":" + clientaccount['xp'] + ":" + clientaccount['access'] + ":" + clientaccount['health']);
+					console.log('Player '+PlayerName[clientid]+' has entered the world.');
+					SendAnnounceChat(PlayerName[clientid] + ' has entered the world.');
+					PlayerLoggedIn[PlayerId[clientid]] = true;
+				});
+			}
+		});
+	}
+}
+
+// Is player logged in
+function isLoggedIn(pid){
+	if(pid != "" && pid != null){
+		if(PlayerLoggedIn[pid] == true){ return true; }else{ return false; }
+	}else{ return false; }
+}
+
+function RemoveClientId(clientid){
+	for(var i = 0; i < ClientIds.length; i++){
+		if(clientid == ClientIds[i]){
+			ClientIds[i] = "";
 		}
-	});
+	}
 }
 
 // Submit user data to database
 function SavePlayerData(clientid,kickplayer){
 	try{
-		mysql.query('update players set name="'+PlayerName[clientid]+'", sprite="'+PlayerSprite[clientid]+'", map="'+PlayerMap[clientid]+'", position="'+PlayerPosition[clientid]+'", items="'+PlayerItems[clientid]+'", xp="'+PlayerXp[clientid]+'", health="'+PlayerHealth[clientid]+'", online=0 where id='+PlayerId[clientid],function(err,results,fields){
+		var phealth = PlayerHealth[clientid];
+		mysql.query('update players set name="'+PlayerName[clientid]+'", sprite="'+PlayerSprite[clientid]+'", map="'+PlayerMap[clientid]+'", position="'+PlayerPosition[clientid]+'", items="'+PlayerItems[clientid]+'", xp="'+PlayerXp[clientid]+'", health="'+phealth[0]+'='+phealth[1]+'", online=0 where id='+PlayerId[clientid],function(err,results,fields){
 			
 			if(kickplayer == true){
 				console.log('Player '+PlayerName[clientid]+' has left the world.');
+				SendAnnounceChat(PlayerName[clientid] + ' has left the game.');
 				
-				ClientIds[clientid] = "";
+				RemoveClientId(clientid);
+				
 				PlayerId[clientid] = "";
 				PlayerName[clientid] = "";
 				PlayerSprite[clientid] = "";
@@ -279,7 +306,7 @@ function SavePlayerData(clientid,kickplayer){
 				PlayerItems[clientid] = "";
 				PlayerXp[clientid] = "";
 				PlayerAccess[clientid] = "";
-				PlayerHealth[clientid] = "";
+				PlayerHealth[clientid] = Array("","");
 			}
 		});
 	}catch(err){
@@ -292,7 +319,8 @@ function GetPlayersOnMap(mapid,clientid){
 	for(var j = 0; j < ClientIds.length; j++){
 		i = ClientIds[j];
 		if(PlayerMap[i] == mapid){
-			output = output + PlayerId[i] + ":" + PlayerName[i] + ":" + PlayerSprite[i] + ":" + PlayerMap[i] + ":" + PlayerPosition[i] + ":" + PlayerItems[i] + ":"+ PlayerXp[i] + ":" + PlayerAccess[i] + ":" + PlayerHealth[i] + ",";
+			var phealth = PlayerHealth[i];
+			output = output + PlayerId[i] + ":" + PlayerName[i] + ":" + PlayerSprite[i] + ":" + PlayerMap[i] + ":" + PlayerPosition[i] + ":" + PlayerItems[i] + ":"+ PlayerXp[i] + ":" + PlayerAccess[i] + ":" + phealth[0]+'-'+phealth[1] + ",";
 		}
 	}
 	for(var j = 0; j < NPCIds.length; j++){
@@ -309,7 +337,8 @@ function UpdatePlayersOnMap(clientid){
 	for(var j = 0; j < ClientIds.length; j++){
 		var i = ClientIds[j];
 		if(PlayerMap[i] == PlayerMap[clientid]){
-			output = output + PlayerId[i] + ":" + PlayerName[i] + ":" + PlayerSprite[i] + ":" + PlayerMap[i] + ":" + PlayerPosition[i] + ":" + PlayerItems[i] + ":" + PlayerXp[i] + ":" + PlayerAccess[i] + ":" + PlayerHealth[i] + ",";
+			var phealth = PlayerHealth[i];
+			output = output + PlayerId[i] + ":" + PlayerName[i] + ":" + PlayerSprite[i] + ":" + PlayerMap[i] + ":" + PlayerPosition[i] + ":" + PlayerItems[i] + ":" + PlayerXp[i] + ":" + PlayerAccess[i] + ":" + phealth[0]+'-'+phealth[1] + ",";
 		}
 	}
 	for(var j = 0; j < NPCMap.length; j++){
@@ -430,6 +459,7 @@ function LoadMap(mapid, clientid){
 		});
 	}else{
 		SendData(clientid,MapData[mapid]);
+		PlayerUpdater[clientid] = true;
 	}
 	console.log('Map '+mapid+' loaded by '+clientid);
 }
@@ -533,14 +563,14 @@ function SendLocalChat(clientid,message){
 	var pmap = PlayerMap[clientid];
 	for(var i = 0; i < ClientIds.length; i++){
 		if(pmap == PlayerMap[ClientIds[i]]){
-			SendData(ClientIds[i],'localchat:<b>'+PlayerName[clientid]+'</b>: '+message);
+			SendData(ClientIds[i],'localchat:<b>'+PlayerName[clientid]+'</b>: '+strip_tags(message));
 			console.log(PlayerName[clientid]+': '+message);
 		}
 	}
 }
 function SendGlobalChat(clientid,message){
 	for(var i = 0; i < ClientIds.length; i++){
-		SendData(ClientIds[i],'globalchat:<b>'+PlayerName[clientid]+'</b>: '+message);
+		SendData(ClientIds[i],'globalchat:<b>'+PlayerName[clientid]+'</b>: '+strip_tags(message));
 		console.log(PlayerName[clientid]+': '+message);
 	}
 }
@@ -553,6 +583,12 @@ function SendAdminChat(clientid,message){
 			SendData(ClientIds[i],'adminchat:<b>'+PlayerName[clientid]+'</b>: '+message);
 			console.log(PlayerName[clientid]+': '+message);
 		}
+	}
+}
+function SendAnnounceChat(message){
+	for(var i = 0; i < ClientIds.length; i++){
+		SendData(ClientIds[i],'adminchat:<b>Announcement</b>: '+message);
+		console.log('Announcement: '+message);
 	}
 }
 
