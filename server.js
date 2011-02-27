@@ -6,8 +6,8 @@ var http = require('http'), io = require('socket.io');
 var Mysql = require('mysql').Client,
 mysql = new Mysql();
 
-mysql.user = 'mystalia';
-mysql.password = 'mystalia777';
+mysql.user = '';
+mysql.password = '';
 mysql.connect();
 mysql.query('USE mmorpg');
 
