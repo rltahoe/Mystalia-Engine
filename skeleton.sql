@@ -30,7 +30,7 @@ CREATE TABLE `accounts` (
   `banned` int(1) NOT NULL,
   `clientid` varchar(50) DEFAULT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=33 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=53 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -56,7 +56,7 @@ CREATE TABLE `attributes` (
   `location` varchar(20) NOT NULL,
   `value` varchar(100) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=9 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -112,7 +112,6 @@ CREATE TABLE `map` (
   `fringe2` text,
   `animated` text,
   `attributes` text,
-  `tileset` varchar(50) NOT NULL,
   `music` int(3) NOT NULL DEFAULT '0',
   `navigate` varchar(20) NOT NULL,
   `npcs` varchar(100) DEFAULT NULL,
@@ -129,7 +128,7 @@ CREATE TABLE `map` (
 
 LOCK TABLES `map` WRITE;
 /*!40000 ALTER TABLE `map` DISABLE KEYS */;
-INSERT INTO `map` VALUES (0,'New Map 0','0x0=0x0','0x0=0x0','0x0=0x0','0x0=0x0','0x0=0x0','0x0=0x0','','1',1,'0-0-0-0',NULL,'1=10x6','friendly');
+INSERT INTO `map` VALUES (0,'New Map 0','0x0=0x0','0x0=0x0','0x0=0x0','0x0=0x0','0x0=0x0','0x0=0x0','',1,'0-0-0-0',NULL,'1=10x6','friendly');
 /*!40000 ALTER TABLE `map` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -150,6 +149,7 @@ CREATE TABLE `npcs` (
   `sprite` int(11) DEFAULT '1',
   `droprate` int(5) DEFAULT '5000',
   `health` int(11) DEFAULT '10',
+  `respawntime` int(8) DEFAULT '5000',
   UNIQUE KEY `id` (`id`)
 ) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -179,13 +179,13 @@ CREATE TABLE `players` (
   `position` varchar(10) NOT NULL,
   `items` text NOT NULL,
   `xp` int(11) NOT NULL,
-  `access` int(1) NOT NULL,
+  `access` int(1) NOT NULL DEFAULT '1',
   `account` int(11) NOT NULL,
   `online` int(1) NOT NULL,
   `lastactive` varchar(20) NOT NULL,
-  `health` int(5) DEFAULT '15',
+  `health` varchar(50) DEFAULT '15-15',
   PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=62 DEFAULT CHARSET=latin1;
+) ENGINE=MyISAM AUTO_INCREMENT=94 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -196,33 +196,6 @@ CREATE TABLE `players` (
 LOCK TABLES `players` WRITE;
 /*!40000 ALTER TABLE `players` DISABLE KEYS */;
 /*!40000 ALTER TABLE `players` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `resources`
---
-
-DROP TABLE IF EXISTS `resources`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `resources` (
-  `id` int(11) NOT NULL AUTO_INCREMENT,
-  `name` varchar(20) NOT NULL,
-  `type` varchar(20) NOT NULL,
-  `width` int(11) NOT NULL,
-  `height` int(11) NOT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=latin1;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `resources`
---
--- WHERE:  id = 0
-
-LOCK TABLES `resources` WRITE;
-/*!40000 ALTER TABLE `resources` DISABLE KEYS */;
-/*!40000 ALTER TABLE `resources` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -238,5 +211,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2011-02-24  0:13:30
-
+-- Dump completed on 2011-02-28  4:40:08
