@@ -21,12 +21,13 @@ function DoLogout(){
 
 // After Images Have Loaded.
 $(window).load(function(){
-	$('#loading-form-status').html('Welcome To '+domain+'<br /><ul><li>Loading Images... Loaded</li><li>Connecting to server...</li></ul>');
+	$('#menuobject-help').hide();
+	$('#loading-form-status').html('Welcome To '+domain+'<br /><ul><li>Loading Data... Loaded</li><li>Connecting to server...</li></ul>');
 	socket.connect();
 	startBlink();
 	setTimeout(function(){
 	if(clientconnected == false){
-		$('#loading-form-status').html('Welcome To '+domain+'<br /><ul><li>Loading Images... Loaded</li><li>Connecting to server... Failed</li></ul>');
+		$('#loading-form-status').html('Welcome To '+domain+'<br /><ul><li>Loading Data... Loaded</li><li>Connecting to server... Failed</li></ul>');
 	}
   },5000);
 });
@@ -100,9 +101,9 @@ $(window).ready(function(){
 		modal: true,
 		closeOnEscape: false,
 		buttons: {
-			"Retry": function(){ socket.connect(); $('#loading-form-status').html('Welcome To '+domain+'<br /><ul><li>Loading Images... Loaded</li><li>Connecting to server...</li></ul>'); setTimeout(function(){
+			"Retry": function(){ socket.connect(); $('#loading-form-status').html('Welcome To '+domain+'<br /><ul><li>Loading Data... Loaded</li><li>Connecting to server...</li></ul>'); setTimeout(function(){
 			if(clientconnected == false){
-				$('#loading-form-status').html('Welcome To '+domain+'<br /><ul><li>Loading Images... Loaded</li><li>Connecting to server... Failed</li></ul>');
+				$('#loading-form-status').html('Welcome To '+domain+'<br /><ul><li>Loading Data... Loaded</li><li>Connecting to server... Failed</li></ul>');
 			}
 		  },5000); }
 		}
@@ -165,7 +166,7 @@ $(window).ready(function(){
 	// Character select form
 	$( "#charselect" ).dialog({
 	autoOpen: false,
-	height: 180,
+	height: 215,
 	width: 250,
 	modal: true,
 	hide: "fade",
@@ -200,12 +201,5 @@ $(window).ready(function(){
 	});
 
 	$('#playeroutput').html('Welcome To '+domain);
-	$('#loading-form-status').html('Welcome To '+domain+'<br /><ul><li>Loading Images...</li></ul>');
-	preload_image_object = new Image();
-	image_url = new Array();
-	image_url[0] = "gfx/t1.png";
-	image_url[1] = "gfx/Sprites.png";
-	for(var i=0; i<=image_url.length-1; i++){
-		preload_image_object.src = image_url[i];
-	}
+	$('#loading-form-status').html('Welcome To '+domain+'<br /><ul><li>Loading Data...</li></ul>');
 });

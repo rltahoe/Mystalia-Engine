@@ -1,6 +1,7 @@
 var current_active_map = 1;
 var active_map_title = '';
 var mapnorth, mapeast, mapsouth, mapwest;
+var MapTiles = Array();
 
 function InitialiseMapGrid(layer){
 	var cellstyle='width:32px;height:32px;';
@@ -12,7 +13,7 @@ function InitialiseMapGrid(layer){
 		
 	// Apply all styles to the cell.
 	cellstyle = cellstyle + ';background-color:' + cellbackgroundcolor + ';';
-	
+ 
 	// Setup map loop.
 	var rowcount = 1;
 	var mapgridhtml = '<table id="'+layer+'_table" style="position:absolute" cellpadding="0" cellspacing="0" border="0"><tr>';
@@ -34,45 +35,26 @@ function InitialiseMapGrid(layer){
 }
 
 // Sets a single map cell.
-function SetMapCellImage(cellnumber,tileset,x,y,layer){
+function SetMapCellImage(cellnumber,x,layer){
 
 	// Set the background image for an individual tile.
-	$('#'+layer+'-'+cellnumber).css('background-image','url(gfx/'+tileset+')');
+	$('#'+layer+'-'+cellnumber).css('background-image','url(gfx/maps/'+current_active_map+'.png)');
 	
-	// Turn easy grid numbers to real ones.
-	x = x*32;
-	y = y*32;
+	x = MapTiles[x]*32;
 	if(x > 0){ x = '-'+x; }
-	if(y > 0){ y = '-'+y; }
 	
 	// Apply the background position.
-	$('#'+layer+'-'+cellnumber).css('background-position',x+'px '+y+'px');
+	$('#'+layer+'-'+cellnumber).css('background-position',x+'px 0');
 }
 
-function SetAnimatedMapCellImage(cellnumber,tileset,x,y){
-	var x = x * 32;
-	var y = y * 32;
+function SetAnimatedMapCellImage(cellnumber,x){
+	x = MapTiles[x]*32;
 	if(x > 0){ x = '-'+x; }
-	if(y > 0){ y = '-'+y; }
-	
-	$('#mask-'+cellnumber).html('<div id="animatedtile'+cellnumber+'" style="width:32px;height:32px;background-image:url(gfx/'+tileset+');background-position:'+x+'px '+y+'px"></div>');
+	$('#mask-'+cellnumber).html('<div id="animatedtile'+cellnumber+'" style="width:32px;height:32px;background-image:url(gfx/maps/'+current_active_map+'.png);background-position:'+x+'px 0px"></div>');
 }
 
 function ClearMapGrid(){
 	$('#map').html('');
-}
-
-// Load Tilesets for Map Editor
-function LoadTileSetGrid(data){
-	$('#tilesetsdropdown').html($('#tilesetsdropdown').html()+'<option value="">Please Select A Tileset.</option>');
-	var tilesets = data.split(',');
-		for(var i = 0; i <= tilesets.length -1; i++){
-		if(tilesets[i]!=''){
-			tileset = tilesets[i].split(':');
-			$('#tilesetsdropdown').html($('#tilesetsdropdown').html()+'<option value="'+tilesets[i]+'">'+tileset[0]+'</option>');
-		}
-	}
-	SendData('loadmap='+current_active_map);
 }
 
 function SetupMapGrid(data){
@@ -82,6 +64,8 @@ function SetupMapGrid(data){
 	InitialiseMapGrid('mask');
 	InitialiseMapGrid('mask2');
 	
+	AddMapElement('<div id="uilayer"></div>'); // TEMP UILAYER because it is not supposed to exist yet but PlaceAllPlayersOnMap  adds to it and cannot do it if it's not there.
+	
 	// Over Player Sprite.
 	AddMapElement('<div id="spritelayer"></div>');	
 	
@@ -90,6 +74,11 @@ function SetupMapGrid(data){
 	
 	InitialiseMapGrid('fringe');
 	InitialiseMapGrid('fringe2');
+	
+	var uilayercontent = $('#uilayer').html(); // ok so now we copy uilayer content.
+	$('#uilayer').remove(); // remove the old one on a lower layer.
+	AddMapElement('<div id="uilayer">'+uilayercontent+'</div>'); // and add a new one in the right place!
+	
 	InitialiseMapGrid('attributes');
 	
 	// Invisible overlay for tile calculations
@@ -147,7 +136,7 @@ function SaveMap(){
 // Function handles map data from ajax request.
 function HandleMapData(data){
 	var mapdata = data.split(':');
-	
+			
 	current_active_map = mapdata[0];
 	var maptitle = mapdata[1];
 	var mapfloor = TilesArrayHandler(mapdata[2]);
@@ -158,25 +147,35 @@ function HandleMapData(data){
 	var mapanimated = TilesArrayHandler(mapdata[7]);
 	var mapattribute = "";
 	if(mapdata[8] != null){ mapattribute = mapdata[8].split('-'); }
-	var maptileset = mapdata[9];
-	var mapmusic = mapdata[10];
-	var navigate = mapdata[11].split('-');
+	var mapmusic = mapdata[9];
+	var navigate = mapdata[10].split('-');
 	
-	if(ismapeditor){
-		$("#tilesetsdropdown").get(0).selectedIndex = maptileset;
-		TileSetSelect();
-		maptileset = $("#tilesetsdropdown").val().split(':')[0];
-	}else{
-		maptileset = 't'+maptileset+'.png';
+	var siftmaptiles = mapfloor.concat(mapmask);
+	siftmaptiles = siftmaptiles.concat(mapmask2);
+	siftmaptiles = siftmaptiles.concat(mapfringe);
+	siftmaptiles = siftmaptiles.concat(mapfringe2);
+	siftmaptiles = siftmaptiles.concat(mapanimated);
+	
+	var count = 0;
+	var uniquetiles = Array();
+	for(var i = 0; i < siftmaptiles.length; i++){
+		var tile = siftmaptiles[i].split('=');
+		tile = tile[1];
+		if(uniquetiles[tile] == null){
+			uniquetiles[tile] = count;
+			count++;
+		}
 	}
+	
+	MapTiles = uniquetiles;
 	
 	// Set Map Title.
 	active_map_title = maptitle;
 	$('#mapname').html(maptitle);
 	
 	if(ismapeditor){
+		TileSetSelect();
 		$('#MapName').val(maptitle);
-		
 		// Set Navigation Boxes and Settings.
 		$('#northmapid').val(navigate[0]);
 		$('#eastmapid').val(navigate[1]);
@@ -196,23 +195,23 @@ function HandleMapData(data){
 	mapwest = parseInt(navigate[3]);
 	
 	// Set the tiles down.
-	for(var i = 0; i <= mapfloor.length -1; i++){
-		SetTilesDown(mapfloor[i],maptileset,'floor');
+	for(var i = 0; i < mapfloor.length; i++){
+		SetTilesDown(mapfloor[i],'floor');
 	}
-	for(var i = 0; i <= mapmask.length -1; i++){
-		SetTilesDown(mapmask[i],maptileset,'mask');
+	for(var i = 0; i < mapmask.length; i++){
+		SetTilesDown(mapmask[i],'mask');
 	}
-	for(var i = 0; i <= mapmask2.length -1; i++){
-		SetTilesDown(mapmask2[i],maptileset,'mask2');
+	for(var i = 0; i < mapmask2.length; i++){
+		SetTilesDown(mapmask2[i],'mask2');
 	}
-	for(var i = 0; i <= mapfringe.length -1; i++){
-		SetTilesDown(mapfringe[i],maptileset,'fringe');
+	for(var i = 0; i < mapfringe.length; i++){
+		SetTilesDown(mapfringe[i],'fringe');
 	}
-	for(var i = 0; i <= mapfringe2.length -1; i++){
-		SetTilesDown(mapfringe2[i],maptileset,'fringe2');
+	for(var i = 0; i < mapfringe2.length; i++){
+		SetTilesDown(mapfringe2[i],'fringe2');
 	}
-	for(var i = 0; i <= mapanimated.length -1; i++){
-		SetAnimatedTilesDown(mapanimated[i],maptileset);
+	for(var i = 0; i < mapanimated.length; i++){
+		SetAnimatedTilesDown(mapanimated[i]);
 	}
 	
 }
@@ -229,21 +228,19 @@ function TilesArrayHandler(raw_tiles_string){
 	}else{ return ""; }
 }
 
-function SetTilesDown(tiledata,tileset,layer){
+function SetTilesDown(tiledata,layer){
 	try{
 		tiledata = tiledata.split('=');
-		tileloc = tiledata[1].split('x');
-		SetMapCellImage(tiledata[0],tileset,tileloc[0],tileloc[1],layer);
+		SetMapCellImage(tiledata[0],tiledata[1],layer);
 	}catch(error){}
 }
 
-function SetAnimatedTilesDown(tiledata,tileset){
+function SetAnimatedTilesDown(tiledata){
 	// Similar to SetTilesDown function except it places a new div inside the mask cell.
 	try{
 		tiledata = tiledata.split('=');
-		tileloc = tiledata[1].split('x');
 				
-		SetAnimatedMapCellImage(tiledata[0],tileset,tileloc[0],tileloc[1]);
+		SetAnimatedMapCellImage(tiledata[0],tiledata[1]);
 	}catch(error){}
 }
 
@@ -286,10 +283,8 @@ function ExportLayerToData(layer){
 	for(var i = 1; i<=300; i++){
 		var cellid = '#'+layer+'-'+i;
 		if($(cellid).css('background-image') != 'none' && $(cellid).css('background-position').substring(0,2) != '0%'){
-			var celltileset = $(cellid).css('background-image');
 			var celltile = $(cellid).css('background-position');
 			
-			celltileset = celltileset.replace('url(gfx/','');
 			celltile = celltile.split(' ');
 			celltile[0] = celltile[0].replace('-',''); celltile[0] = celltile[0].replace('px','');
 			celltile[1] = celltile[1].replace('-',''); celltile[1] = celltile[1].replace('px','');
@@ -308,10 +303,8 @@ function ExportAnimatedLayerToData(){
 		if($(cellid).html() != ''){
 			var maskcell = $(cellid).children('div');
 			if($(maskcell).css('background-image') != 'none' && $(maskcell).css('background-position').substring(0,2) != '0%'){
-				var celltileset = $(maskcell).css('background-image');
 				var celltile = $(maskcell).css('background-position');
 				
-				celltileset = celltileset.replace('url(gfx/','');
 				celltile = celltile.split(' ');
 				celltile[0] = celltile[0].replace('-',''); celltile[0] = celltile[0].replace('px','');
 				celltile[1] = celltile[1].replace('-',''); celltile[1] = celltile[1].replace('px','');
@@ -371,7 +364,7 @@ function ChangeMap(id){
 	$('#playertitle-'+User_Player).remove();
 	
 	// Update player location.
-	var loc = Player_Location[User_Player].join('x');
+	var loc = Player_Position[User_Player].join('x');
 	$('#map').fadeOut(500,function(){
 		ClearMapGrid();
 		SendData('changemap='+loc+':'+current_active_map);

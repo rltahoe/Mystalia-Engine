@@ -1,5 +1,5 @@
 var Player_Sprite_Number = Array();
-var Player_Location = Array();
+var Player_Position = Array();
 var Player_Direction = Array();
 var Player_Speed = Array();
 var Player_Moving = Array();
@@ -51,30 +51,32 @@ function SetPlayerSprite(player){
 }
 
 function AddPlayerElement(element){
-	$('#spritelayer').html($('#spritelayer').html()+element);
+	$('#spritelayer').append(element);
+}
+function AddUIElement(element){
+	$('#uilayer').append(element);
 }
 function AddPlayerTitle(player,name){
-	AddPlayerElement('<div id="playertitle-'+player+'" style="width:96px;padding:0;margin:0;font-weight:bold;text-align:center;position:absolute;zindex:8;text-shadow:1px 1px #BBBBBB;">'+name+'</div>');
+	AddUIElement('<div id="playertitle-'+player+'" class="playertitle">'+name+'<br /><div class="healthbarunder" id="healthbar-'+player+'"><div class="healthbarover" id="playerhealth-'+player+'"></div></div></div>');
 }
 function AddPlayerSprite(player,x,y){
-	AddPlayerElement('<div id="playersprite-'+player+'" style="width:32px;height:32px;position:absolute;zindex:3;left:'+x+'px;top:'+y+'px"></div>');
+	AddPlayerElement('<div id="playersprite-'+player+'" class="playersprite" style="left:'+x+'px;top:'+y+'px"></div>');
 }
 
 function PlacePlayer(player,tile){
-	ptpos = $('#map').position();
+	ptpos = $('#mapcontainer').position();
 	AddPlayerSprite(player,ptpos.left+(tile[0]*32),ptpos.top+(tile[1]*32));
 	SetPlayerSprite(player);
 	$('#playertitle-'+player).css('left',ptpos.left+(tile[0]*32)-32);
-	$('#playertitle-'+player).css('top',ptpos.top+(tile[1]*32)-15);
+	$('#playertitle-'+player).css('top',ptpos.top+(tile[1]*32)-21);
 }
 
 function AddPlayer(id,name,sprite,position){
-
 	AddPlayerTitle(id,name);
 			
 	// Set player array data.
 	Player_Sprite_Number[id] = sprite;
-	Player_Location[id] = position;
+	Player_Position[id] = position;
 	if(id!=User_Player){ Player_Direction[id] = 'down'; }
 	Player_Speed[id] = 400;
 	Player_Moving[id] = false;
@@ -96,12 +98,12 @@ function MovePlayer(player,isinput){
 	if(Sprite_Animation_Moving[player] == false){
 		DoAnimation(player);
 		AnimationInterval[player] = setInterval('DoAnimation('+player+')',(Player_Speed[player] / 2));
-		var playerloc = Player_Location[player];
+		var playerloc = Player_Position[player];
 		
 		if(isinput){
 			switch(Player_Direction[player]){
 				case "up": if(playerloc[1] > 0){
-					if(isBlocked(playerloc[0],playerloc[1] - 1) == false){
+					if(isBlocked(playerloc[0],playerloc[1] - 1) == false && isTaken(playerloc[0],playerloc[1] - 1) == false){
 						playerloc[1] = playerloc[1] - 1; 
 					}else if(isDoor(playerloc[0],playerloc[1] - 1)){
 						
@@ -109,21 +111,21 @@ function MovePlayer(player,isinput){
 				}else{ if(mapnorth > 0){ LoadNextMap(Player_Direction[player]); } } break;
 				
 				case "down": if(playerloc[1] < 14){
-					if(isBlocked(playerloc[0],playerloc[1] + 1) == false){
+					if(isBlocked(playerloc[0],playerloc[1] + 1) == false && isTaken(playerloc[0],playerloc[1] + 1) == false){
 						playerloc[1] = playerloc[1] + 1;
 					}else if(isDoor(playerloc[0],playerloc[1] + 1)){
 					
 					}
 				}else{ if(mapsouth > 0){ LoadNextMap(Player_Direction[player]); } } break;
 				case "left": if(playerloc[0] > 0){
-					if(isBlocked(playerloc[0] - 1,playerloc[1]) == false){
+					if(isBlocked(playerloc[0] - 1,playerloc[1]) == false && isTaken(playerloc[0] - 1,playerloc[1]) == false){
 						playerloc[0] = playerloc[0] - 1;
 					}else if(isDoor(playerloc[0] - 1,playerloc[1])){
 						
 					}
 				}else{ if(mapwest > 0){ LoadNextMap(Player_Direction[player]); } } break;
 				case "right": if(playerloc[0] < 19){
-					if(isBlocked(playerloc[0] + 1,playerloc[1]) == false){
+					if(isBlocked(playerloc[0] + 1,playerloc[1]) == false && isTaken(playerloc[0] + 1,playerloc[1]) == false){
 						playerloc[0] = playerloc[0] + 1;
 					}else if(isDoor(playerloc[0] + 1,playerloc[1])){
 						
@@ -132,17 +134,17 @@ function MovePlayer(player,isinput){
 			}
 		}
 		
-		// Update player location.
+		// Update player Position.
 		if(player == User_Player){
-			var loc = Player_Location[User_Player].join('x');
+			var loc = Player_Position[User_Player].join('x');
 			SendData('setloc='+loc);
 		}
 	
 		Sprite_Animation_Moving[player] = true;
-		ptpos = $('#map').position();
-		$('#playertitle-'+player).animate({ "left": ptpos.left+(playerloc[0]*32)-32 + 'px', "top": ptpos.top+(playerloc[1]*32)-15 + 'px'	}, Player_Speed[player], 'linear' );
+		ptpos = $('#mapcontainer').position();
+		$('#playertitle-'+player).animate({ "left": ptpos.left+(playerloc[0]*32)-32 + 'px', "top": ptpos.top+(playerloc[1]*32)-21 + 'px'}, Player_Speed[player], 'linear' );
 		
-		$('#playersprite-'+player).animate({ "left": ptpos.left+(playerloc[0]*32) + 'px', "top": ptpos.top+(playerloc[1]*32) + 'px'	}, Player_Speed[player], 'linear', function(){
+		$('#playersprite-'+player).animate({ "left": ptpos.left+(playerloc[0]*32) + 'px', "top": ptpos.top+(playerloc[1]*32) + 'px'}, Player_Speed[player], 'linear', function(){
 			Sprite_Animation_Moving[player] = false;
 			clearInterval(AnimationInterval[player]);
 			if(DirectionKeys.W == true || DirectionKeys.A == true || DirectionKeys.S == true || DirectionKeys.D == true){
@@ -153,7 +155,7 @@ function MovePlayer(player,isinput){
 			}
 		});
 		
-		Player_Location[player] = playerloc;
+		Player_Position[player] = playerloc;
 	}
 }
 
@@ -195,7 +197,7 @@ function InitiallyLoadPlayer(data){
 function PlaceAllPlayersOnMap(data){
 	var players = data.split(',');
 	
-	for(var i = 0; i <= players.length-1; i++){
+	for(var i = 0; i < players.length; i++){
 		var player = players[i].split(':');
 		
 		if(player==''){ break; }
@@ -208,15 +210,26 @@ function PlaceAllPlayersOnMap(data){
 		var items = player[5];
 		var xp = player[6];
 		var access = player[7];
-		
+		var health = player[8].split('-');
+	
 		Player_Id[playerid] = playerid;
 		
 		if(playerid == User_Player_Id){ User_Player = playerid; }
 		AddPlayerTitle(playerid,name);
+		if(health[0] == health[1]){ $('#healthbar-'+playerid).fadeOut(); }
 		
+		switch(access){
+			case "0": $('#playertitle-'+playerid).css('color','#444444'); break;
+			case "1": $('#playertitle-'+playerid).css('color','#5585ff'); break;
+			case "2": $('#playertitle-'+playerid).css('color','#1c1cff'); break;
+			case "3": $('#playertitle-'+playerid).css('color','#dddd19'); break;
+			case "4": $('#playertitle-'+playerid).css('color','#00cf45'); break;
+			case "5": $('#playertitle-'+playerid).css('color','#ff0000'); break;
+		}
+			
 		// Set player array data.
 		Player_Sprite_Number[playerid] = sprite;
-		Player_Location[playerid] = position;
+		Player_Position[playerid] = position;
 		if(playerid!=User_Player){ Player_Direction[playerid] = 'down'; }
 		Player_Speed[playerid] = 400;
 		Player_Moving[playerid] = false;
@@ -234,7 +247,7 @@ function UpdateAllPlayersOnMap(data){
 	var newplayerid = Array();
 	
 	// Loop through the current players.
-	for(var i = 0; i >= players.length-2; i++){
+	for(var i = 0; i < players.length; i++){
 			
 			// Single player var.
 			try{var player = players[i].split(':');}catch(err){break;}
@@ -249,6 +262,10 @@ function UpdateAllPlayersOnMap(data){
 			var xp = player[6];
 			var access = player[7];
 			
+			var health = player[8].split('-');
+	
+			if(health[0] == health[1]){ $('#healthbar-'+playerid).fadeOut(); }
+			
 			// Find if they are a new player.
 			var newplayer = true;
 			if(Player_Id[playerid] > 0){ newplayer = false; }
@@ -260,36 +277,39 @@ function UpdateAllPlayersOnMap(data){
 				AddPlayer(playerid,name,sprite,position);
 				Player_Id[playerid] = playerid;
 			}
+			
+			if($('#playersprite-'+playerid).exists() == false){ 
+				AddPlayer(playerid,name,sprite,position);
+			}
 		
 			// If the player is still on the map and not the user.
 			if(playerid != User_Player_Id){
-				// and the player location has changed.
-				var position2 = Player_Location[playerid];
+				// and the player Position has changed.
+				var position2 = Player_Position[playerid];
 				if(position2[0] != position[0] || position2[1] != position[1]){
 					// Update all variables with new player state
 					Player_Sprite_Number[playerid] = sprite;
 					
 					// Set direction.
-					var position2 = Player_Location[playerid] 
+					var position2 = Player_Position[playerid] 
 					if(position2[0] > position[0]){ Player_Direction[playerid] = 'left'; }
 					if(position2[0] < position[0]){ Player_Direction[playerid] = 'right'; }
 					if(position2[1] > position[1]){ Player_Direction[playerid] = 'up'; }
 					if(position2[1] < position[1]){ Player_Direction[playerid] = 'down'; }
 					
-					Player_Location[playerid] = position;
+					Player_Position[playerid] = position;
 					MovePlayer(playerid,false);
 				}
-				
-				$('#playertitle-'+playerid).html(name);
 			}
 			
 			if(playerid == User_Player_Id){ User_Player = playerid; }
 			switch(access){
 				case "0": $('#playertitle-'+playerid).css('color','#444444'); break;
-				case "1": $('#playertitle-'+playerid).css('color','#ccccff'); break;
-				case "2": $('#playertitle-'+playerid).css('color','#cccc66'); break;
-				case "3": $('#playertitle-'+playerid).css('color','#33cc66'); break;
-				case "4": $('#playertitle-'+playerid).css('color','#990033'); break;
+				case "1": $('#playertitle-'+playerid).css('color','#5585ff'); break;
+				case "2": $('#playertitle-'+playerid).css('color','#1c1cff'); break;
+				case "3": $('#playertitle-'+playerid).css('color','#dddd19'); break;
+				case "4": $('#playertitle-'+playerid).css('color','#00cf45'); break;
+				case "5": $('#playertitle-'+playerid).css('color','#ff0000'); break;
 			}
 	}
 		
@@ -306,6 +326,43 @@ function UpdateAllPlayersOnMap(data){
 	
 	clearInterval(AnimationInterval[User_Player]);
 	UpdatingPlayers = false;
+}
+
+function NPCUpdate(data){
+	data = data.split(':');
+	var playerid = data[0];
+	var name = data[1];
+	var sprite = data[2];
+	var map = data[3];
+	var position = data[4].split('x');
+	var items = data[5];
+	var xp = data[6];
+	var access = data[7];
+	var health = data[8].split('-');
+	
+	if(health[0] == health[1]){ $('#healthbar-'+playerid).fadeOut(); }
+	
+	if($('#playersprite-'+playerid).exists() == false){ 
+		AddPlayer(playerid,name,sprite,position);
+	}
+	
+	// Set direction.
+	var position2 = Player_Position[playerid] 
+	if(position2[0] > position[0]){ Player_Direction[playerid] = 'left'; }
+	if(position2[0] < position[0]){ Player_Direction[playerid] = 'right'; }
+	if(position2[1] > position[1]){ Player_Direction[playerid] = 'up'; }
+	if(position2[1] < position[1]){ Player_Direction[playerid] = 'down'; }
+	Player_Position[playerid] = position;
+	
+	switch(access){
+		case "0": $('#playertitle-'+playerid).css('color','#444444'); break;
+		case "1": $('#playertitle-'+playerid).css('color','#5585ff'); break;
+		case "2": $('#playertitle-'+playerid).css('color','#1c1cff'); break;
+		case "3": $('#playertitle-'+playerid).css('color','#dddd19'); break;
+		case "4": $('#playertitle-'+playerid).css('color','#00cf45'); break;
+		case "5": $('#playertitle-'+playerid).css('color','#ff0000'); break;
+	}
+	MovePlayer(playerid,false);
 }
 
 function MoveAllPlayersOnResize(){
@@ -342,4 +399,18 @@ function CheckRange(pos1,pos2){
 	if(num1 > num2){
 		return num2;
 	}else{ return num1; }
+}
+
+// checks if a tile has a player in it
+function isTaken(posx,posy){
+	var istaken = false;
+	for(var i = 0; i < Player_Id.length; i++){
+		if(Player_Id[i] != null){
+			playerpos = Player_Position[Player_Id[i]];
+			if(playerpos[0] == posx && playerpos[1] == posy){
+				istaken = true;
+			}
+		}
+	}
+	return istaken;
 }

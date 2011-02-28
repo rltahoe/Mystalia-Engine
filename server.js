@@ -1,4 +1,5 @@
-// Require HTTP module (to start server) and Socket.IO
+var sys = require('sys')
+var exec = require('child_process').exec;
 require('joose'); require('joosex-namespace-depended'); require('hash');
 
 var http = require('http'), io = require('socket.io');
@@ -6,8 +7,8 @@ var http = require('http'), io = require('socket.io');
 var Mysql = require('mysql').Client,
 mysql = new Mysql();
 
-mysql.user = '';
-mysql.password = '';
+mysql.user = 'mystalia';
+mysql.password = 'mystalia777';
 mysql.connect();
 mysql.query('USE mmorpg');
 
@@ -16,30 +17,33 @@ var gamename = "Mystalia Online";
 var startmap = 1;
 var startpos = '10x6';
 var workingmsg = "" // "The server will be down for maintenance and integration of Artificial Intelligence!!! (17/02/2011)";
+var serverloc = "/var/www/";
 
 var socketOptions = { 
   transportOptions: { 
     'flashsocket': { 
-      closeTimeout: 1000000, 
-      timeout: 100000 
+      closeTimeout: 10000, 
+      timeout: 10000 
     }, 'websocket': { 
-      closeTimeout: 1000000, 
-      timeout: 100000 
+      closeTimeout: 10000, 
+      timeout: 10000 
     }, 'htmlfile': { 
-      closeTimeout: 1000000, 
-      timeout: 100000 
+      closeTimeout: 10000, 
+      timeout: 10000
     }, 'xhr-multipart': { 
-      closeTimeout: 1000000, 
-      timeout: 100000 
+      closeTimeout: 10000, 
+      timeout: 10000 
     }, 'xhr-polling': { 
-      closeTimeout: 1000000, 
-      timeout: 100000 
+      closeTimeout: 10000, 
+      timeout: 10000 
     }, 'jsonp-polling': { 
-      closeTimeout: 1000000, 
-      timeout: 100000 
+      closeTimeout: 10000, 
+      timeout: 10000
     } 
   } 
 }; 
+
+function puts(error, stdout, stderr) { sys.puts(stdout) }
 
 // Start the server at port 8080
 var server = http.createServer(function(req, res){ 
@@ -49,7 +53,6 @@ var server = http.createServer(function(req, res){
 server.listen(8080);
 
 var PlayerUpdater = Array();
-var PlayerUpdaterInterval = Array();
 var PlayerChangingMap = Array();
 
 var ClientIds = Array();
@@ -64,6 +67,7 @@ var PlayerPosition = Array();
 var PlayerAccess = Array();
 var PlayerHealth = Array();
 
+var NPCsTotal = 300;
 var NPCData = Array();
 var NPCIds = Array();
 var NPCUpdater = Array();
@@ -77,10 +81,14 @@ var NPCRange = Array();
 var NPCXp = Array();
 var NPCSkill = Array();
 var NPCDropRate = Array();
+var NPCRespawnTime = Array();
+var NPCMoveFunctions = Array();
 
 var MapItems = Array();
 var MapAttributes = Array();
 var MapData = Array();
+
+var PlayersOnMap  = Array();
 
 function Initialise(){
 	mysql.query('select * from npcs', function(err, results, fields){
@@ -89,8 +97,10 @@ function Initialise(){
 			x = x['id'];
 			NPCData[x] = results[i];
 		}
-		console.log('npcs loaded.');
+		console.log('NPCs loaded.');
 	});
+	
+	setInterval(function(){ CalculatePlayersOnMaps(); },10000);
 }
 
 Initialise();
@@ -109,13 +119,11 @@ socket.on('connection', function(client){
 	
 	if(PlayerUpdater[clientid] == true){
 		console.log('Map '+PlayerMap[clientid]+' loaded by '+PlayerName[clientid]+' ('+clientid+')');
-		PlayerUpdaterInterval[clientid] = setInterval(function(){ UpdatePlayersOnMap(clientid); },500);
 		PlayerUpdater[clientid] = false;
 	}
   });
   client.on('disconnect',function(){
   console.log(clientid);
-	clearInterval(PlayerUpdaterInterval[clientid]);
 	SavePlayerData(clientid,true);
   });  
 });
@@ -130,7 +138,6 @@ function HandleClientData(data,clientid){
 		case "login": DoLogin(data[1],clientid); break;
 		case "online": SetPlayerOnline(data[1],clientid); break;
 		case "playersonmap": GetPlayersOnMap(data[1],clientid); break;
-		case "loadtileset": LoadTileSet(data[1],clientid); break;
 		case "loadmap": LoadMap(data[1],clientid); break;
 		case "maplist": GetMapList(clientid); break;
 		case "setloc": SetLoc(data[1],clientid); break;
@@ -156,11 +163,7 @@ function HandleClientData(data,clientid){
 }
 
 function SendData(client,data){
-	try{
-		socket.clients[client].send(data);
-	}catch(err){
-		clearInterval(PlayerUpdaterInterval[client]);
-	}
+	try{ socket.clients[client].send(data); }catch(err){ }
 }
 
 /* PLAYER AND ACCOUNT FUNCTIONS */
@@ -288,6 +291,7 @@ function SetPlayerOnline(player,clientid){
 					SendData(clientid,'online:'+clientaccount['id'] + ":" + clientaccount['name'] + ":" + clientaccount['sprite'] + ":" + clientaccount['map'] + ":" + clientaccount['position'] + ":" + clientaccount['items'] + ":" + clientaccount['xp'] + ":" + clientaccount['access'] + ":" + clientaccount['health']);
 					console.log('Player '+PlayerName[clientid]+' has entered the world.');
 					SendAnnounceChat(PlayerName[clientid] + ' has entered the world.');
+					UpdatePlayersOnMap(PlayerMap[clientid]);
 					PlayerLoggedIn[PlayerId[clientid]] = true;
 				});
 			}
@@ -333,11 +337,13 @@ function PlayerAlreadyLoaded(pid){
 // Submit user data to database
 function SavePlayerData(clientid,kickplayer){
 	var phealth = PlayerHealth[clientid];
+	phealth = Array(15,15);
 	mysql.query('update players set name="'+PlayerName[clientid]+'", sprite="'+PlayerSprite[clientid]+'", map="'+PlayerMap[clientid]+'", position="'+PlayerPosition[clientid]+'", items="'+PlayerItems[clientid]+'", xp="'+PlayerXp[clientid]+'", health="'+phealth[0]+'='+phealth[1]+'", online=0 where id='+PlayerId[clientid],function(err,results,fields){
 		
 		if(kickplayer == true){
 			console.log('Player '+PlayerName[clientid]+' has left the world.');
-			SendAnnounceChat(PlayerName[clientid] + ' has left the game.');
+			if(PlayerName[clientid] != null && PlayerName[clientid] != ""){ SendAnnounceChat(PlayerName[clientid] + ' has left the game.'); }
+			UpdatePlayersOnMap(PlayerMap[clientid]);
 			
 			RemoveClientId(clientid);
 			
@@ -363,16 +369,17 @@ function GetPlayersOnMap(mapid,clientid){
 			output = output + PlayerId[i] + ":" + PlayerName[i] + ":" + PlayerSprite[i] + ":" + PlayerMap[i] + ":" + PlayerPosition[i] + ":" + PlayerItems[i] + ":"+ PlayerXp[i] + ":" + PlayerAccess[i] + ":" + phealth[0]+'-'+phealth[1] + ",";
 		}
 	}
-	for(var j = 0; j < NPCIds.length; j++){
-		i = NPCIds['npc'+j];
+	for(var j = 0; j < NPCsTotal; j++){
+		i = NPCIds[j];
 		if(NPCMap[i] == mapid){
-			output = output + 'npc'+i + ":" + NPCName[i] + ":" + NPCSprite[i] + ":" + NPCMap[i] + ":" + NPCPosition[i] + ":0:" + NPCXp[i] + ":0:" + NPCHealth[i] + ",";
+			var phealth = NPCHealth[i];
+			output = output + i + ":" + NPCName[i] + ":" + NPCSprite[i] + ":" + NPCMap[i] + ":" + NPCPosition[i] + ":0:" + NPCXp[i] + ":0:" + phealth[0]+'-'+phealth[1] + ",";
 		}
 	}
 	SendData(clientid,'playersonmap:'+output);
 }
 
-function UpdatePlayersOnMap(clientid){
+function DoUpdatePlayersOnMap(clientid){
 	var output = "";
 	for(var j = 0; j < ClientIds.length; j++){
 		var i = ClientIds[j];
@@ -381,25 +388,46 @@ function UpdatePlayersOnMap(clientid){
 			output = output + PlayerId[i] + ":" + PlayerName[i] + ":" + PlayerSprite[i] + ":" + PlayerMap[i] + ":" + PlayerPosition[i] + ":" + PlayerItems[i] + ":" + PlayerXp[i] + ":" + PlayerAccess[i] + ":" + phealth[0]+'-'+phealth[1] + ",";
 		}
 	}
-	for(var j = 0; j < NPCMap.length; j++){
-		i = NPCIds['npc'+j];
+	for(var j = 0; j < NPCsTotal; j++){
+		i = NPCIds[j];
 		if(NPCMap[i] == PlayerMap[clientid]){
-			output = output + 'npc'+i + ":" + NPCName[i] + ":" + NPCSprite[i] + ":" + NPCMap[i] + ":" + NPCPosition[i] + ":0:" + NPCXp[i] + ":0:" + NPCHealth[i] + ",";
+			var phealth = NPCHealth[i];
+			output = output + i + ":" + NPCName[i] + ":" + NPCSprite[i] + ":" + NPCMap[i] + ":" + NPCPosition[i] + ":0:" + NPCXp[i] + ":0:" + phealth[0]+'-'+phealth[1] + ",";
 		}
 	}
 	SendData(clientid,'updateplayersonmap:'+output.substring(0,output.length-1));
 }
 
+// Get all clients on the map to update.
+function UpdatePlayersOnMap(mapid){
+	for(var i = 0; i < ClientIds.length; i++){
+		if(PlayerMap[ClientIds[i]] == mapid){
+			DoUpdatePlayersOnMap(ClientIds[i]);
+		}
+	}
+}
+
+// Update single npc position.
+function UpdateSingleNPC(mapid,nid){
+	for(var i = 0; i < ClientIds.length; i++){
+		if(PlayerMap[ClientIds[i]] == mapid){
+			var nhealth = NPCHealth[nid];
+			var data = nid + ":" + NPCName[nid] + ":" + NPCSprite[nid] + ":" + NPCMap[nid] + ":" + NPCPosition[nid] + ":0:" + NPCXp[nid] + ":0:" + nhealth[0]+'-'+nhealth[1];
+			SendData(ClientIds[i],'updatenpc:'+data);
+		}
+	}
+}
+
 function SetLoc(newloc,clientid){
 	if(PlayerChangingMap[clientid] == false){
 		PlayerPosition[clientid] = newloc;
+		UpdatePlayersOnMap(PlayerMap[clientid]);
 	}
 }
 
 function PlayerChangeMap(playerlocandmap,clientid){
 	
 	PlayerChangingMap[clientid] = true;
-	clearInterval(PlayerUpdaterInterval[clientid]);
 	PlayerUpdater[clientid] = false;
 	
 	playerinfo = playerlocandmap.split(':');
@@ -485,11 +513,14 @@ function LoadMap(mapid, clientid){
 			if(results.length > 0){
 				var mapdata = results[0];
 				if(mapdata['id'] != ''){
-					var output = 'loadmap:'+mapdata['id'] + ":" + mapdata['title'] + ":" + mapdata['floor'] + ":" + mapdata['mask'] + ":" + mapdata['mask2'] + ":" + mapdata['fringe'] + ":" + mapdata['fringe2'] + ":" + mapdata['animated'] + ":" + mapdata['attributes'] + ":" + mapdata['tileset'] + ":" + mapdata['music'] + ':' + mapdata['navigate'];
+					SetMapAttributes(mapdata['id'],mapdata['attributes']);
+					if(mapdata['npcs'] != "" && mapdata['npcs'] != null && AreNPCsOnMap(mapdata['id']) == false){ LoadNPCs(mapdata['id'],mapdata['npcs']); }
+					CalculatePlayersOnMaps();
+					DoUpdatePlayersOnMap(clientid);
+					var output = 'loadmap:'+mapdata['id'] + ":" + mapdata['title'] + ":" + mapdata['floor'] + ":" + mapdata['mask'] + ":" + mapdata['mask2'] + ":" + mapdata['fringe'] + ":" + mapdata['fringe2'] + ":" + mapdata['animated'] + ":" + mapdata['attributes'] + ":" + mapdata['music'] + ':' + mapdata['navigate'];
+					exec("php "+serverloc+"tilesgen.php "+output, puts);
 					SendData(clientid,output);
 					MapData[mapdata['id']] = output;
-					SetMapAttributes(mapdata['id'],mapdata['attributes']);
-					if(mapdata['npcs'] != "" && mapdata['npcs'] != null){ LoadNPCs(mapdata['id'],mapdata['npcs']); }
 				}
 				PlayerUpdater[clientid] = true;
 			}else{
@@ -534,7 +565,7 @@ function TilePositionToNumber(x,y){
 }
 
 function CreateMap(mapid,playerloc,clientid){
-	mysql.query("insert into map (id,title,floor,mask,mask2,fringe,fringe2,animated,tileset,music,navigate) values ("+mapid+",'New Map "+mapid+"','0x0=0x0','0x0=0x0','0x0=0x0','0x0=0x0','0x0=0x0','0x0=0x0','1',1,'0-0-0-0')",function(){
+	mysql.query("insert into map (id,title,floor,mask,mask2,fringe,fringe2,animated,music,navigate) values ("+mapid+",'New Map "+mapid+"','0x0=0x0','0x0=0x0','0x0=0x0','0x0=0x0','0x0=0x0','0x0=0x0','1',1,'0-0-0-0')",function(){
 		console.log('Created Map '+mapid);
 		PlayerChangeMap(playerloc+':'+mapid,clientid);
 	});
@@ -546,27 +577,13 @@ function SaveMap(clientid,data){
 		data = data.split(':');
 		var navigate = data[11].split('-');
 		navigate = parseInt(navigate[0])+'-'+parseInt(navigate[1])+'-'+parseInt(navigate[2])+'-'+parseInt(navigate[3]);
-		var sql = "update map set title='"+data[1]+"',floor='"+data[2]+"',mask='"+data[3]+"',mask2='"+data[4]+"',fringe='"+data[5]+"',fringe2='"+data[6]+"',animated='"+data[7]+"',attributes='"+data[8]+"',tileset='"+data[9]+"',music="+data[10]+",navigate='"+navigate+"' where id = "+data[0];
+		var sql = "update map set title='"+data[1]+"',floor='"+data[2]+"',mask='"+data[3]+"',mask2='"+data[4]+"',fringe='"+data[5]+"',fringe2='"+data[6]+"',animated='"+data[7]+"',attributes='"+data[8]+"',music="+data[9]+",navigate='"+navigate+"' where id = "+data[0];
 		mysql.query(sql);
 		MapData[data[0]] = "";
 		SendData(clientid,'save:x');
 	}else{
 		SendData(clientid,'save:Sorry, you do not have access to save.');
 	}
-}
-
-// Loads tile set list for map editor.
-function LoadTileSet(tileset,clientid){
-	mysql.query("select * from resources where type = 'tileset' order by id",function(err, results, fields){
-		var output = "";
-		for(var i = 0; i <= results.length-1; i++){
-			var tilesets = results[i];
-			output = output + tilesets['name'] + ":" + tilesets['width'] + ":" + tilesets['height'] + ",";
-		}
-		output = output.trim(',');
-		SendData(clientid,'loadtileset:'+output);
-		console.log('Tilesets retrieved by '+clientid);
-	});
 }
 
 // Loads map list for map editor.
@@ -583,8 +600,8 @@ function GetMapList(clientid){
 
 function isBlocked(mapid,pos){
 	// Check if next tile is blocked
-	var tile = TilePositionToNumber(x,y);
-	switch(AttributeArray[tile]){
+	var attr = MapAttributes[mapid];
+	switch(attr[pos.join('x')]){
 		case "block": return true; break;
 		case "door": return true; break;
 		case "keyopen": return true; break;
@@ -594,7 +611,11 @@ function isBlocked(mapid,pos){
 	}
 }
 function isNPCAvoid(mapid,pos){
-
+	var attr = MapAttributes[mapid];
+	switch(attr[pos.join('x')]){
+		case "npcavoid": return true; break;
+		default: return false;
+	}
 }
 
 // CHAT COMMANDS
@@ -638,44 +659,89 @@ function LoadNPCs(mapid,npcs){
 	var count = 0;
 	for(var i = 0; i < npcs.length; i++){
 		var npc = NPCData[npcs[i]];
-		var uniqueid = 'npc'+(NPCIds.length+i);
-		var x = NPCIds.length+i;
+		var x = NPCsTotal+1; NPCsTotal++;
 		
-		NPCIds[uniqueid] = x;
+		NPCIds[x] = x;
 		NPCMap[x] = mapid;
 		NPCName[x] = npc['name'];
 		NPCPosition[x] = '0x0';
-		NPCHealth[x] = npc['health'];
+		
+		// Set npc in a random, suitable position on the map.
+		var suitable = false;
+		while(suitable == false){
+			var randx = Math.floor(Math.random()*20);
+			var randy = Math.floor(Math.random()*15);
+			if(isBlocked(mapid,Array(randx,randy)) == false){
+				if(isNPCAvoid(mapid,Array(randx,randy)) == false){
+					suitable = true;
+					NPCPosition[x] = randx+'x'+randy;
+				}
+			}
+		}
+		
+		NPCHealth[x] = Array(npc['health'],npc['health']);
 		NPCSprite[x] = npc['sprite'];
 		NPCItem[x] = npc['item'];
 		NPCRange[x] = npc['range'];
 		NPCXp[x] = npc['xp'];
 		NPCSkill[x] = npc['skill'];
 		NPCDropRate[x] = npc['droprate'];
-		NPCUpdater[x] = setInterval(function(){ NPCMove(); },2000);
+		NPCRespawnTime[x] = npc['respawntime'];
+		NPCMoveFunctions[x] = NPCMove(mapid,x);
+		
+		var ticker = 1000 + Math.floor(Math.random()*3000);
+		NPCUpdater[x] = setTimeout(function(){ NPCMoveFunctions[x]; },ticker);
 			
 		count = i;
 	}
+	UpdatePlayersOnMap(mapid);
 	console.log((count+1) + ' NPCs Created.');
 }
 
-function NPCMove(){
-	for(var i = 0; i < NPCIds.length; i++){
-		if(NPCPosition[NPCIds['npc'+i]] != null){
+function CalculatePlayersOnMaps(){
+	for(var i = 0; i < PlayersOnMap.length; i++){
+		PlayersOnMap[i] = 0;
+	}
+	for(var i = 0; i < ClientIds.length; i++){
+		if(PlayerMap[ClientIds[i]] != "" && PlayerMap[ClientIds[i]] != null){ PlayersOnMap[PlayerMap[ClientIds[i]]]++; }
+	}
+}
+
+function AreNPCsOnMap(mapid){
+	var x = false;
+	for(var i = 300; i < NPCsTotal; i++){
+		if(NPCMap[i] == mapid){ x = true; }
+	}
+	return x;
+}
+
+function NPCMove(mapid,nid){
+	var ticker = 3000;
+	if(PlayersOnMap[mapid] > 0 || PlayersOnMap[mapid] > 0){
+		if(NPCPosition[nid] != null){
 			// Randomly pick where npc will travel along X (0) or Y (1) axis.
 			var xy = Math.floor(Math.random()*2);
 			// Randomly pick whether the npc should go one way or another.
 			var ab = Math.floor(Math.random()*2);
-			var firstpos = NPCPosition[NPCIds['npc'+i]].split('x');
+			var firstpos = NPCPosition[nid].split('x');
 			
 			if(xy == 0){
-				if(ab == 0){ firstpos[0]--; }else{ firstpos[0]++; }
+				if(ab == 0 && firstpos[0] > 0){ firstpos[0]--; }else{ if(firstpos[0] < 19){ firstpos[0]++; } }
 			}else{
-				if(ab == 0){ firstpos[1]--; }else{ firstpos[1]++; }
+				if(ab == 0 && firstpos[1] > 0){ firstpos[1]--; }else{ if(firstpos[1] < 14){ firstpos[1]++; } }
 			}
-			NPCPosition[NPCIds['npc'+i]] = firstpos.join('x');
+			
+			if(isBlocked(mapid,firstpos) == false){
+				if(isNPCAvoid(mapid,firstpos) == false){
+					NPCPosition[nid] = firstpos.join('x');
+					UpdateSingleNPC(mapid,nid);
+				}
+			}
 		}
+		ticker = 1000 + Math.floor(Math.random()*3000);
 	}
+	
+	setTimeout(function(){ NPCMove(mapid,nid); },ticker);
 }
 
 /* OTHER FUNCTION */

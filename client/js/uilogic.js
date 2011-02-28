@@ -109,12 +109,10 @@ function UpdateMouseOverCell(cell){
 			bgpos[0] = bgpos[0] / 32;
 			bgpos[1] = bgpos[1] / 32;
 			
-			// Get tileset.
-			var tileset = $('#tilesetsdropdown').val().split(':');
 			if(layer!='animated'){
-				SetMapCellImage(output,tileset[0],bgpos[0],bgpos[1],layer);
+				SetMapCellImage(output,bgpos[0],layer);
 			}else{
-				SetAnimatedMapCellImage(output,tileset[0],bgpos[0],bgpos[1]);
+				SetAnimatedMapCellImage(output,bgpos[0]);
 			}
 		}else if(Attributes == true){
 			var activeattribute = $('input:radio[name=ActiveAttribute]:checked').val();
@@ -217,24 +215,22 @@ function LoadMapList(data){
 	$('#MapList').html(data);
 }
 
-// On selecting a tileset, load it.
 function TileSetSelect(){
-	tileset = $('#tilesetsdropdown').val().split(':');
-	$('#TileSet').css('width',parseInt(tileset[1])+18);
-	$('#TileSetGrid').css('width',tileset[1]);
-	$('#TileSetGrid').css('height',tileset[2]);
-	$('#TileSetGrid').css('background-image','url(gfx/'+tileset[0]+')');
+	$('#TileSet').css('width',parseInt(TileSetSize[0])+18);
+	$('#TileSetGrid').css('width',TileSetSize[0]);
+	$('#TileSetGrid').css('height',TileSetSize[1]);
+	$('#TileSetGrid').css('background','url(gfx/Tiles.png) no-repeat');
 	
 	// Load map editor overgrid.
-	var tileswidth = Math.floor(tileset[1]/32);
-	var tilesheight = Math.floor(tileset[2]/32);
+	var tileswidth = Math.floor([0]/32);
+	var tilesheight = Math.floor([1]/32);
 	var tilestotal = tilesheight * tileswidth;
 	
 	var mapgridhtml = '<table id="editor_table" cellpadding="0" cellspacing="0"><tr>';
 	var cellstyle = 'width:32px;height:32px';
 	var rowcount = 0; var colcount = 0;
 	for(var i = 0; i<=tilestotal; i++){
-		mapgridhtml = mapgridhtml + '<td id="editor'+rowcount+'x'+colcount+'" style="'+cellstyle+'" onclick="SetActiveTile(\''+tileset[0]+'\',this)"></td>';
+		mapgridhtml = mapgridhtml + '<td id="editor'+rowcount+'x'+colcount+'" style="'+cellstyle+'" onclick="SetActiveTile(\'Tiles\',this)"></td>';
 		if(rowcount == tileswidth-1){ mapgridhtml = mapgridhtml + '</tr><tr>'; rowcount=0; colcount++; }else{rowcount++;}
 	}
 	mapgridhtml = mapgridhtml + '</tr></table>';
@@ -325,4 +321,10 @@ function doBlink() {
 
 function startBlink() {
     setInterval("doBlink()",1000)
+}
+
+function SelectMenuItem(item){
+	$('#playermenutable').fadeOut('slow',function(){
+		$('#menuobject-help').fadeIn('slow');
+	});
 }
